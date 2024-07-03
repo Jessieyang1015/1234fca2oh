@@ -42,11 +42,11 @@
 /************************************************************************/
 /******/ ([
 /* 0 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 	var _gifsparser = __webpack_require__(1);
 
@@ -81,7 +81,6 @@
 	   * For MeshBasicMaterial
 	   * @see http://threejs.org/docs/#Reference/Materials/MeshBasicMaterial
 	   */
-
 	  schema: {
 
 	    /* For material */
@@ -106,11 +105,15 @@
 	    this.__cnv.height = 2;
 	    this.__ctx = this.__cnv.getContext('2d');
 	    this.__texture = new THREE.Texture(this.__cnv); //renders straight from a canvas
+	    if (data.repeat) {
+	      this.__texture.wrapS = THREE.RepeatWrapping;
+	      this.__texture.wrapT = THREE.RepeatWrapping;
+	      this.__texture.repeat.set(data.repeat.x, data.repeat.y);
+	    }
 	    this.__material = {};
 	    this.__reset();
 	    this.material = new THREE.MeshBasicMaterial({ map: this.__texture });
 	    this.el.sceneEl.addBehavior(this);
-	    this.__addPublicFunctions();
 	    return this.material;
 	  },
 
@@ -204,8 +207,8 @@
 	   * @param {Object} data - Material component data.
 	   */
 	  __updateTexture: function __updateTexture(data) {
-	    var src = data.src;
-	    var autoplay = data.autoplay;
+	    var src = data.src,
+	        autoplay = data.autoplay;
 
 	    /* autoplay */
 
@@ -265,20 +268,18 @@
 
 	    /* if there is message, create error data */
 	    if (message) {
-	      (function () {
-	        var srcData = gifData[src];
-	        var errData = createError(message, src);
-	        /* callbacks */
-	        if (srcData && srcData.callbacks) {
-	          srcData.callbacks.forEach(function (cb) {
-	            return cb(errData);
-	          });
-	        } else {
-	          cb(errData);
-	        }
-	        /* overwrite */
-	        gifData[src] = errData;
-	      })();
+	      var srcData = gifData[src];
+	      var errData = createError(message, src);
+	      /* callbacks */
+	      if (srcData && srcData.callbacks) {
+	        srcData.callbacks.forEach(function (cb) {
+	          return cb(errData);
+	        });
+	      } else {
+	        cb(errData);
+	      }
+	      /* overwrite */
+	      gifData[src] = errData;
 	    }
 	  },
 
@@ -322,9 +323,9 @@
 	        /* parse data */
 	        (0, _gifsparser.parseGIF)(arr, function (times, cnt, frames) {
 	          /* store data */
-	          var newData = { status: 'success', src: src, times: times, cnt: cnt, frames: frames, timestamp: Date.now() };
-	          /* callbacks */
-	          if (srcData.callbacks) {
+	          var newData = { status: 'success', src: src, times: times, cnt: cnt, frames: frames, timestamp: Date.now()
+	            /* callbacks */
+	          };if (srcData.callbacks) {
 	            srcData.callbacks.forEach(function (cb) {
 	              return cb(newData);
 	            });
@@ -415,21 +416,6 @@
 	  ================================*/
 
 	  /**
-	   * add public functions
-	   * @private
-	   */
-	  __addPublicFunctions: function __addPublicFunctions() {
-	    this.el.gif = {
-	      play: this.play.bind(this),
-	      pause: this.pause.bind(this),
-	      togglePlayback: this.togglePlayback.bind(this),
-	      paused: this.paused.bind(this),
-	      nextFrame: this.nextFrame.bind(this)
-	    };
-	  },
-
-
-	  /**
 	   * Pause gif
 	   * @public
 	   */
@@ -512,8 +498,22 @@
 	   * @private
 	   */
 	  __draw: function __draw() {
-	    this.__ctx.drawImage(this.__frames[this.__frameIdx], 0, 0, this.__width, this.__height);
-	    this.__texture.needsUpdate = true;
+	    if (this.__frameIdx != 0) {
+	      var lastFrame = this.__frames[this.__frameIdx - 1];
+	      // Disposal method indicates if you should clear or not the background.
+	      // This flag is represented in binary and is a packed field which can also represent transparency.
+	      // http://matthewflickinger.com/lab/whatsinagif/animation_and_transparency.asp
+	      if (lastFrame.disposalMethod == 8 || lastFrame.disposalMethod == 9) {
+	        this.__clearCanvas();
+	      }
+	    } else {
+	      this.__clearCanvas();
+	    }
+	    var actualFrame = this.__frames[this.__frameIdx];
+	    if (typeof actualFrame !== 'undefined') {
+	      this.__ctx.drawImage(actualFrame, 0, 0, this.__width, this.__height);
+	      this.__texture.needsUpdate = true;
+	    }
 	  },
 
 
@@ -530,10 +530,10 @@
 	   * @param {array} frames - array of each image
 	   */
 	  __ready: function __ready(_ref) {
-	    var src = _ref.src;
-	    var times = _ref.times;
-	    var cnt = _ref.cnt;
-	    var frames = _ref.frames;
+	    var src = _ref.src,
+	        times = _ref.times,
+	        cnt = _ref.cnt,
+	        frames = _ref.frames;
 
 	    log('__ready');
 	    this.__textureSrc = src;
@@ -558,11 +558,9 @@
 	  /*=============================
 	  =            reset            =
 	  =============================*/
-
 	  /**
 	   * @private
 	   */
-
 	  __reset: function __reset() {
 	    this.pause();
 	    this.__clearCanvas();
@@ -578,9 +576,9 @@
 	  }
 	});
 
-/***/ },
+/***/ }),
 /* 1 */
-/***/ function(module, exports) {
+/***/ (function(module, exports) {
 
 	'use strict';
 
@@ -601,7 +599,7 @@
 	  var frames = [];
 	  var loopCnt = 0;
 	  if (gif[0] === 0x47 && gif[1] === 0x49 && gif[2] === 0x46 && // 'GIF'
-	  gif[3] === 0x38 && gif[4] === 0x39 && gif[5] === 0x61) {
+	  gif[3] === 0x38 && (gif[4] === 0x39 || gif[4] === 0x37) && gif[5] === 0x61) {
 	    // '89a'
 	    pos += 13 + +!!(gif[10] & 0x80) * Math.pow(2, (gif[10] & 0x07) + 1) * 3;
 	    var gifHeader = gif.subarray(0, pos);
@@ -625,7 +623,15 @@
 	        while (gif[++pos]) {
 	          pos += gif[pos];
 	        }var imageData = gif.subarray(offset, pos + 1);
-	        frames.push(URL.createObjectURL(new Blob([gifHeader, graphicControl, imageData])));
+	        // Each frame should have an image and a flag to indicate how to dispose it.
+	        var frame = {
+	          // http://matthewflickinger.com/lab/whatsinagif/animation_and_transparency.asp
+	          // Disposal method is a flag stored in the 3rd byte of the graphics control
+	          // This byte is packed and stores more information, only 3 bits of it represent the disposal
+	          disposalMethod: graphicControl[3],
+	          blob: URL.createObjectURL(new Blob([gifHeader, graphicControl, imageData]))
+	        };
+	        frames.push(frame);
 	      } else {
 	        errorCB && errorCB('parseGIF: unknown blockId');break;
 	      }
@@ -638,7 +644,7 @@
 
 	    var cnv = document.createElement('canvas');
 	    var loadImg = function loadImg() {
-	      frames.forEach(function (src, i) {
+	      for (var i = 0; i < frames.length; i++) {
 	        var img = new Image();
 	        img.onload = function (e, i) {
 	          if (i === 0) {
@@ -652,8 +658,10 @@
 	            imageFix(1);
 	          }
 	        }.bind(img, null, i);
-	        img.src = src;
-	      });
+	        // Link html image tag with the extracted GIF Frame 
+	        img.src = frames[i].blob;
+	        img.disposalMethod = frames[i].disposalMethod;
+	      }
 	    };
 	    var imageFix = function imageFix(i) {
 	      var img = new Image();
@@ -673,5 +681,5 @@
 	  }
 	};
 
-/***/ }
+/***/ })
 /******/ ]);
