@@ -27,15 +27,14 @@
                 cursor="fuse: false; rayOrigin: mouse;"
                 id="markerA"
             >
-                <a-image
-                    src="assets/asset.gif"
-                    scale="1 1 1"
-                    class="clickable"
-                    rotation="-90 0 0"
-                    gesture-handler
-                ></a-image>
-            </a-marker>
-
+            <a-image
+                  src="assets/asset.gif"
+                  scale="1 1 1"
+                  class="clickable"
+                  rotation="-90 0 0"
+                  material="shader: gif; src: assets/asset.gif;"
+                  gesture-handler
+             ></a-image>
             <a-entity camera></a-entity>
         </a-scene>
     </body>
